@@ -19,7 +19,9 @@ defmodule Programa do
 
     opcion = IO.gets("Seleccione una opción: ")
     |> String.trim()
+
     # utilizamos case para tomar decisiones a través del menú
+    
     case opcion do
       "1" ->
         IO.inspect(confeccionistas, label: "Confeccionistas existentes")
