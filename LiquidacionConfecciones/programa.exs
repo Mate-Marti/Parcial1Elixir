@@ -1,8 +1,3 @@
-# usa Code.require_file/1 para cargar los archivos de datos y validaciones,
-#con el fin de poder acceder a las funciones definidas en esos módulos
-Code.require_file("datos.exs", __DIR__)
-Code.require_file("validacion.ex", __DIR__)
-
 defmodule Programa do
 
   def main do
