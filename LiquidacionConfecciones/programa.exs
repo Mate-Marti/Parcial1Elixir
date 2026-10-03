@@ -15,13 +15,14 @@ defmodule Programa do
     IO.puts("3. Mostrar lotes")
     IO.puts("4. Validar lotes")
     IO.puts("5. valor_lotes")
-    IO.puts("6. salir")
+    IO.puts("6. liquidacion del confeccionista")
+    IO.puts("7. salir")
 
     opcion = IO.gets("Seleccione una opción: ")
     |> String.trim()
 
     # utilizamos case para tomar decisiones a través del menú
-    
+
     case opcion do
       "1" ->
         IO.inspect(confeccionistas, label: "Confeccionistas existentes")
@@ -61,7 +62,47 @@ defmodule Programa do
           end)
         IO.inspect(resultados, label: "Valores de lotes válidos", limit: :infinity)
         menu(confeccionistas, lineas, lotes)
+
+        #se filtran los lotes validos en lotes_validos
+        #se pide el codigo del confeccionista en buscar_confeccionista
+        #se busca al confeccionista
+        #*en el if*: se le asigna a resultado la liquidacion que se hizo
+        #            se imprime la tabla porpuesta como en el ejemplo
       "6" ->
+        lotes_validos =
+          Enum.filter(lotes, fn lote ->
+            case Validaciones.validar_lote(lote, confeccionistas, lineas) do
+              {:ok, _} -> true
+              {:error, _} -> false
+            end
+          end)
+
+        buscar_confeccionista = IO.gets("ingrese el codigo del confeccionista para liquidar: ") |> String.trim()
+
+        confeccionista = Enum.find(confeccionistas, fn c -> c.codigo == buscar_confeccionista end)
+
+        if confeccionista do
+
+          resultado = Liquidacion.liquidar_confeccionista(confeccionista, lotes_validos)
+
+          IO.puts("Nombre del confeccionista: #{resultado.confeccionista.nombre} , y alquilo maquina?: #{resultado.confeccionista.alquiler}")
+          IO.puts("Dia\tLinea\tPrendas\tDefectos\tValor de Lote")
+
+          Enum.each(resultado.lotes_detalle, fn lote ->
+            IO.puts("#{lote.dia}\t#{lote.linea}\t#{lote.prendas}\t#{lote.defectos}%\t\t$#{:erlang.float_to_binary(lote.valor_calculado * 1.0, decimals: 2)}")
+          end)
+
+          IO.puts("Suma de los lotes: $#{:erlang.float_to_binary(resultado.suma_lotes * 1.0, decimals: 2)}")
+          IO.puts("Bonificaciones: $#{:erlang.float_to_binary(resultado.bonificaciones * 1.0, decimals: 2)}")
+          IO.puts("Descuento alquiler: -$#{:erlang.float_to_binary(resultado.descuento_alquiler * 1.0, decimals: 2)}")
+          IO.puts("Total para pagar: $#{:erlang.float_to_binary(resultado.neto * 1.0, decimals: 2)}")
+
+        else
+          IO.puts("Confeccionista no encontrado")
+        end
+        menu(confeccionistas, lineas, lotes)
+
+      "7" ->
         IO.puts("Saliendo del programa...")
       _ ->
         IO.puts("Opción inválida. Intente nuevamente.")
