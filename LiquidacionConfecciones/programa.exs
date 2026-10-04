@@ -15,9 +15,9 @@ defmodule Programa do
     IO.puts("3. Crear lotes")
     IO.puts("4. Mostrar lotes")
     IO.puts("5. Validar lotes")
-    IO.puts("6. valor_lotes")
-    IO.puts("7. liquidacion del confeccionista")
-    IO.puts("8. Reportes de lotes rechazados")
+    IO.puts("6. Valor de lotes")
+    IO.puts("7. Liquidación del confeccionista")
+    IO.puts("8. Reportes")
     IO.puts("9. salir")
 
     opcion = IO.gets("Seleccione una opción: ")
@@ -135,7 +135,7 @@ defmodule Programa do
         menu(confeccionistas, lineas, lotes)
 
       "8" ->
-        Reportes.r1(lotes, confeccionistas, lineas)
+        Reportes.todos_los_reportes(lotes, confeccionistas, lineas)
         menu(confeccionistas, lineas, lotes)
 
       "9" ->

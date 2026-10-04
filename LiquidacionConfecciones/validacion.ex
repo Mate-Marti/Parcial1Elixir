@@ -19,7 +19,7 @@ defmodule Validaciones do
   end
   #si esta en el rango de 1 a 6, devuelve :ok, de lo contrario devuelve un error con el motivo :dia_invalido
   def validar_dia(dia) do
-if Enum.any?(1..6,&(&1 == dia)) do
+    if Enum.any?(1..6,&(&1 == dia)) do
       :ok
     else
       {:error, :dia_invalido}
@@ -27,8 +27,8 @@ if Enum.any?(1..6,&(&1 == dia)) do
   end
   #si esta en el rango de 1 a 180, devuelve :ok, de lo contrario devuelve un error con el motivo :prendas_fuera_de_rango
   def validar_prendas(prendas) do
-if Enum.any?(1..180, &(&1 == prendas)) do
-      :ok
+    if Enum.any?(1..180, &(&1 == prendas)) do
+        :ok
     else
       {:error, :prendas_fuera_de_rango}
     end
@@ -41,8 +41,7 @@ if Enum.any?(1..180, &(&1 == prendas)) do
       {:error, :porcentaje_invalido}
     end
   end
-#recibe un lote, una lista de confeccionistas y una lista de lineas, y valida cada campo del lote utilizando las funciones de
-#validación correspondientes
+#recibe un lote, una lista de confeccionistas y una lista de lineas, y valida cada campo del lote utilizando las funciones de validación correspondientes
 #valida todos los campos del lote y devuelve {:ok, lote} si todos son válidos, o {:error, motivo} si alguno es inválido
 #utiliza with para encadenar las validaciones y devolver el primer error encontrado, si todas son válidas devuelve {:ok, lote}
   def validar_lote(lote, confeccionistas, lineas) do
