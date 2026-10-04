@@ -58,4 +58,39 @@ if Enum.any?(1..180, &(&1 == prendas)) do
     end
   end
 
+  @doc """
+  se toma la cadena de texto ingresada por el usuario y la convierte en un mapa de lote con el parse/2
+  #if para verificar que si tennga los 5 espacios usados y si es diferente de 5 manda error como formato invalido
+  #con el parce se separa lo ingresado para terminar haciendo el mapa del lote nuevo
+  """
+  def entrada_lote("") do
+    {:ok, :omitido}
+  end
+
+  def entrada_lote(entrada) do
+    partes = String.split(entrada, ";")
+
+    if length(partes) != 5 do
+      {:error, :formato_invalido}
+    else
+      [conf, lin, dia_str, prend_str, def_str] = partes
+
+      with {dia, ""} <- Integer.parse(dia_str),
+           {prendas, ""} <- Integer.parse(prend_str),
+           {defectos, ""} <- Float.parse(def_str) do
+
+        lote_nuevo = %{
+          confeccionista: conf,
+          linea: lin,
+          dia: dia,
+          prendas: prendas,
+          defectos: defectos
+        }
+        {:ok, lote_nuevo}
+      else
+        _ -> {:error, :formato_invalido}
+      end
+    end
+  end
+
 end

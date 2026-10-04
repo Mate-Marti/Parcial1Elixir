@@ -12,11 +12,12 @@ defmodule Programa do
     IO.puts("\nMenú de opciones:")
     IO.puts("1. Mostrar confeccionistas")
     IO.puts("2. Mostrar líneas")
-    IO.puts("3. Mostrar lotes")
-    IO.puts("4. Validar lotes")
-    IO.puts("5. valor_lotes")
-    IO.puts("6. liquidacion del confeccionista")
-    IO.puts("7. salir")
+    IO.puts("3. Crear lotes")
+    IO.puts("4. Mostrar lotes")
+    IO.puts("5. Validar lotes")
+    IO.puts("6. valor_lotes")
+    IO.puts("7. liquidacion del confeccionista")
+    IO.puts("8. salir")
 
     opcion = IO.gets("Seleccione una opción: ")
     |> String.trim()
@@ -32,11 +33,41 @@ defmodule Programa do
         IO.inspect(lineas, label: "Líneas existentes")
         menu(confeccionistas, lineas, lotes)
 
+        #se usa la validacion de entrada para los datos que netran
+        #se usa la validacion de lote para verificar que se haya creado bien
+        #se hace aparecer el menu y se pega el lote nuevo a la lista
       "3" ->
+        IO.puts("\nTenga en cuenta que el formato es asi: (confeccionista;linea;dia;prendas;defectos), por ejemplo: C01;L1;1;100;1.5")
+
+        entrada = IO.gets("Ingrese los datos del lote que quiere agregar,y si quiere salir oprima enter:  ") |> String.trim()
+
+        case Validaciones.entrada_lote(entrada) do
+          {:ok, :omitido} ->
+            IO.puts("La creacion del lote fue omitida")
+            menu(confeccionistas, lineas, lotes)
+
+          {:error, :formato_invalido} ->
+            IO.puts("Error: formato invalido")
+            menu(confeccionistas, lineas, lotes)
+
+          {:ok, lote_nuevo} ->
+
+            case Validaciones.validar_lote(lote_nuevo, confeccionistas, lineas) do
+              {:ok, _} ->
+                IO.puts("Lote agregado")
+                menu(confeccionistas, lineas, [lote_nuevo | lotes])
+
+              {:error, motivo} ->
+                IO.puts("Lote rechazado ya que: #{motivo}")
+                menu(confeccionistas, lineas, lotes)
+            end
+        end
+
+      "4" ->
         IO.inspect(lotes, label: "Lotes existentes", limit: :infinity)
         menu(confeccionistas, lineas, lotes)
 
-      "4" ->
+      "5" ->
         resultados =
           Enum.map(lotes, fn lote ->
             Validaciones.validar_lote(lote, confeccionistas, lineas)
@@ -47,7 +78,7 @@ defmodule Programa do
 #el Enum.filter se utiliza para filtrar los lotes válidos, y luego se calcula el valor
 #de cada lote válido utilizando la función valor_lote del módulo Liquidacion. Finalmente,
 #se imprime el resultado en la consola.
-      "5" ->
+      "6" ->
         resultados =
           lotes
           |> Enum.filter(fn lote ->
@@ -68,7 +99,7 @@ defmodule Programa do
         #se busca al confeccionista
         #*en el if*: se le asigna a resultado la liquidacion que se hizo
         #            se imprime la tabla porpuesta como en el ejemplo
-      "6" ->
+      "7" ->
         lotes_validos =
           Enum.filter(lotes, fn lote ->
             case Validaciones.validar_lote(lote, confeccionistas, lineas) do
@@ -102,7 +133,7 @@ defmodule Programa do
         end
         menu(confeccionistas, lineas, lotes)
 
-      "7" ->
+      "8" ->
         IO.puts("Saliendo del programa...")
       _ ->
         IO.puts("Opción inválida. Intente nuevamente.")
