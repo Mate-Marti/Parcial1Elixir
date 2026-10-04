@@ -19,7 +19,7 @@ defmodule Reportes do
 
   # R1. Rechazos
 
-  @doc """ 
+  @doc """
   Cantidad de rechazos por motivo, a partir de `[{lote, motivo}]`.
   Devuelve `[{motivo, cantidad}]` con los cinco motivos en el orden de las
   reglas, incluso los que tienen cero rechazos.
