@@ -17,7 +17,8 @@ defmodule Programa do
     IO.puts("5. Validar lotes")
     IO.puts("6. valor_lotes")
     IO.puts("7. liquidacion del confeccionista")
-    IO.puts("8. salir")
+    IO.puts("8. Reportes de lotes rechazados")
+    IO.puts("9. salir")
 
     opcion = IO.gets("Seleccione una opción: ")
     |> String.trim()
@@ -134,6 +135,10 @@ defmodule Programa do
         menu(confeccionistas, lineas, lotes)
 
       "8" ->
+        Reportes.r1(lotes, confeccionistas, lineas)
+        menu(confeccionistas, lineas, lotes)
+
+      "9" ->
         IO.puts("Saliendo del programa...")
       _ ->
         IO.puts("Opción inválida. Intente nuevamente.")
