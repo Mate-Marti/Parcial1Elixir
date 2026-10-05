@@ -45,6 +45,8 @@ defmodule Reportes do
           {lote, motivo_texto}
       end
     end)
+    # el enum.reject/2 filtra los elementos nulos de la lista resultante,
+    # dejando solo los lotes rechazados con su motivo correspondiente
     |> Enum.reject(&is_nil/1)
   end
 
@@ -56,6 +58,7 @@ defmodule Reportes do
   end
 
   @doc """
+  reporte 1
   Esta función recibe una lista de lotes, una lista de confeccionistas y una lista de líneas, y
   genera un reporte de los lotes rechazados, agrupándolos por motivo de rechazo
   y mostrando la cantidad de lotes rechazados por cada motivo.
@@ -76,7 +79,7 @@ defmodule Reportes do
     IO.inspect(rechazos, label: "Lotes rechazados por motivo y su cantidad", limit: :infinity)
   end
 
-  # R2. Productividad por línea
+  # Reporte 4
   # recibe lotes válidos y líneas, devuelve una lista de mapas con id, nombre, prendas, productividad de cada línea, ordenadas de mayor a menor productividad. Las líneas sin lotes válidos aparecen con cero.
   # enum.map/2 itera sobre cada línea en la lista de líneas, y para cada línea l,
   # obtiene la cantidad de prendas producidas en esa línea a partir de los lotes válidos,
@@ -96,7 +99,7 @@ defmodule Reportes do
     |> Enum.sort_by(& &1.productividad, :desc)
   end
 
-  # R3. Producción diaria y meta
+  # Reporte 3
   @doc "Prendas producidas en cada uno de los 6 días (cero si no hubo lotes)."
   # recibe lotes válidos y devuelve un mapa con la producción diaria (días 1 a 6)
   # sumar_prendas_por/2 acumula las prendas de los lotes válidos por día
@@ -125,31 +128,51 @@ defmodule Reportes do
     }
   end
 
-  # R4 y C.1. Ranking con keyword list
+  # Reporte 4
   @doc """
-  R4. Ranking con keyword list
-  Las tres líneas con Keyword.get leen las opciones, cada una con su valor por defecto.
-  Orden: el case elige entre :desc y :asc, y cada rama usa un solo Enum.sort/2 con una función de comparación.
-  Límite: Enum.take corta la lista al final.
-  Si se llama con un :orden distinto de :desc o :asc, el case falla; el enunciado solo permite esos dos valores.
+  Liquidación de todos los confeccionistas, numerada y ordenada por pago neto de
+  mayor a menor. Debe mostrar el numero de prendas, valor de lotes, bonificaciones, alquiler y neto con el cual se renquea los confeccionistas.
+  Los valores monetarios se imprimen con dos decimales y sin notación científica
   """
-  def ranking(liquidaciones, opciones) do
-    campo = Keyword.get(opciones, :campo, :neto)
-    orden = Keyword.get(opciones, :orden, :desc)
-    limite = Keyword.get(opciones, :limite, length(liquidaciones))
+  def ordenar_liquidaciones(lotes, confeccionistas, lineas) do
 
-    ordenadas =
-      case orden do
-        :desc -> Enum.sort(liquidaciones, fn a, b -> Map.get(a, campo) >= Map.get(b, campo) end)
-        :asc -> Enum.sort(liquidaciones, fn a, b -> Map.get(a, campo) <= Map.get(b, campo) end)
+    lotes_validos =
+    Enum.filter(lotes, fn lote ->
+      case Validaciones.validar_lote(lote, confeccionistas, lineas) do
+        {:ok, _} -> true
+        {:error, _} -> false
       end
+    end)
 
-    Enum.take(ordenadas, limite)
+    liquidaciones =
+    confeccionistas
+    |> Enum.map(fn confeccionista ->
+      liq = Liquidacion.liquidar_confeccionista(confeccionista, lotes_validos)
+      total_prendas = Enum.reduce(liq.lotes_detalle, 0, fn lote, acc -> acc + lote.prendas end)
+
+      Map.put(liq, :prendas, total_prendas)
+    end)
+    # 3. Ordenamos de mayor a menor pago neto
+    |> Enum.sort_by(& &1.neto, :desc)
+
+    liquidaciones
+    |> Enum.with_index(1)
+    |> Enum.each(fn {liq, idx} ->
+      nombre = String.pad_trailing(liq.confeccionista.nombre, 18)
+      prendas = String.pad_leading(to_string(liq.prendas), 6)
+      bonificacion = Util.formatear_dinero(liq.bonificaciones)
+      alquiler = Util.formatear_dinero(liq.descuento_alquiler)
+      neto = Util.formatear_dinero(liq.neto)
+
+    IO.puts("puesto:#{idx} nombre: #{nombre} N° prendas: #{prendas} valor bonificacion: $#{bonificacion} valor alquiler:$#{alquiler} valor neto:$#{neto}")
+  end)
+  liquidaciones
+
   end
 
-  # R5. Líder de producción por día
+
   @doc """
-  R5
+  Reporte 5. Líderes por día
   """
   def lideres_por_dia(lotes_validos, confeccionistas) do
     nombres =
@@ -209,101 +232,225 @@ defmodule Reportes do
     end
   end
 
-  ########### PENDIENTES ##################
-  # R6. Mejor calidad
+  # Reporte 6. Mejor calidad
 
   @doc """
   Porcentaje de defectos ponderado por prendas: suma(defectos × prendas) / suma(prendas).
   enum.reduce/3 acumula la suma de las prendas y la suma de defectos × prendas de cada lote
   """
-  def porcentaje_ponderado(lotes) do
-    total_prendas = Enum.reduce(lotes, 0, fn lote, acc -> acc + lote.prendas end)
+  def mejor_calidad(lotes, confeccionistas, lineas) do
 
-    total_defectuosas =
-      Enum.reduce(lotes, 0, fn lote, acc -> acc + lote.defectos * lote.prendas end)
+  lotes_validos =
+    Enum.filter(lotes, fn lote ->
+      case Validaciones.validar_lote(lote, confeccionistas, lineas) do
+        {:ok, _} -> true
+        {:error, _} -> false
+      end
+    end)
 
-    total_defectuosas / total_prendas
+    resultados =
+    confeccionistas
+    |> Enum.map(fn confeccionista ->
+      lotes_del_confeccionista =
+        Enum.filter(lotes_validos, fn lote ->
+          lote.confeccionista == confeccionista.codigo
+        end)
+
+      cantidad_de_lotes = length(lotes_del_confeccionista)
+
+      if cantidad_de_lotes >= 3 do
+        # Sumatoria de prendas defectuosas y total de prendas confeccionadas
+        {prendas_defectuosas_totales, total_de_prendas} =
+          Enum.reduce(
+            lotes_del_confeccionista,
+            {0.0, 0},
+            fn lote, {acumulador_defectos, acumulador_prendas} ->
+              prendas_defectuosas_del_lote = lote.prendas * (lote.defectos / 100.0)
+
+              {
+                acumulador_defectos + prendas_defectuosas_del_lote,
+                acumulador_prendas + lote.prendas
+              }
+            end
+          )
+
+        porcentaje_ponderado =
+          if total_de_prendas > 0 do
+            (prendas_defectuosas_totales / total_de_prendas) * 100.0
+          else
+            0.0
+          end
+
+        %{
+          nombre: confeccionista.nombre,
+          lotes: cantidad_de_lotes,
+          total_prendas: total_de_prendas,
+          porcentaje_ponderado: porcentaje_ponderado
+        }
+      else
+        nil
+      end
+    end)
+    |> Enum.reject(&is_nil/1)
+    |> Enum.sort_by(fn resultado -> resultado.porcentaje_ponderado end)
+
+
+    IO.puts("\n Confeccionista con mejor calidad:")
+
+  case resultados do
+    [] ->
+      IO.puts("No hay confeccionistas que cumplan con el criterio de tener al menos 3 lotes válidos.")
+
+    [confeccionista_ganador | _] ->
+      porcentaje_ganador_formateado = Util.formatear_dinero(confeccionista_ganador.porcentaje_ponderado)
+
+      IO.puts("El confeccionista con mejor calidad es #{confeccionista_ganador.nombre}, alcanzando el menor porcentaje")
+      IO.puts("de defectos ponderado con un #{porcentaje_ganador_formateado}% sobre un total de #{confeccionista_ganador.total_prendas} prendas")
+      IO.puts("registradas en #{confeccionista_ganador.lotes} lotes válidos.\n")
+
+      IO.puts("Desempeño general de los confeccionistas evaluados (mínimo 3 lotes):")
+
+      Enum.each(resultados, fn elemento ->
+        porcentaje_formateado = Util.formatear_dinero(elemento.porcentaje_ponderado)
+        IO.puts("• #{String.pad_trailing(elemento.nombre, 22)} -> #{porcentaje_formateado}% defectos ponderados (#{elemento.lotes} lotes, #{elemento.total_prendas} prendas)")
+      end)
   end
 
-  def promedio_simple(lotes) do
-    Enum.reduce(lotes, 0, fn lote, acc -> acc + lote.defectos end) / length(lotes)
-  end
+end
+
 
   @doc """
-  Confeccionista con menor porcentaje ponderado entre quienes tienen al menos
-  3 lotes válidos. Devuelve `{:ok, %{nombre, porcentaje}}` o `{:error, :sin_datos}`.
-  enum.group_by/2 agrupa los lotes válidos por el código del confeccionista
-  enum.map/2 y Map.get/3 asocian a cada confeccionista su lista de lotes (vacía si no tiene)
-  enum.filter/2 deja solo a quienes tienen el mínimo de lotes
-  enum.sort/2 ordena de menor a mayor porcentaje y case con [mejor | _resto] toma el primero (la cabeza)
+  Reporte 7. Costo total
   """
-  def mejor_calidad(lotes_validos, confeccionistas) do
-    lotes_por_codigo = Enum.group_by(lotes_validos, & &1.confeccionista)
-
-    candidatos =
-      confeccionistas
-      |> Enum.map(fn c -> {c, Map.get(lotes_por_codigo, c.codigo, [])} end)
-      |> Enum.filter(fn {_c, lotes} -> length(lotes) >= @minimo_lotes_calidad end)
-      |> Enum.map(fn {c, lotes} ->
-        %{nombre: c.nombre, porcentaje: porcentaje_ponderado(lotes)}
+  def resumen_financiero_semanal(lotes, confeccionistas, lineas) do
+    # 1. Filtrar los lotes válidos utilizando Validaciones.validar_lote/3
+    lotes_validos =
+      Enum.filter(lotes, fn lote ->
+        case Validaciones.validar_lote(lote, confeccionistas, lineas) do
+          {:ok, _} -> true
+          {:error, _} -> false
+        end
       end)
 
-    case Enum.sort(candidatos, fn a, b -> a.porcentaje <= b.porcentaje end) do
-      [] -> {:error, :sin_datos}
-      [mejor | _resto] -> {:ok, mejor}
+    # Calcular el total pagado a los confeccionistas sumando el neto de cada liquidación
+    total_pagado_taller =
+      confeccionistas
+      |> Enum.map(fn confeccionista ->
+        liquidacion = Liquidacion.liquidar_confeccionista(confeccionista, lotes_validos)
+        liquidacion.neto
+      end)
+      |> Enum.sum()
+
+    # Calcular el total de prendas válidas sumando las prendas válidas de cada lote
+    total_prendas_validas =
+      Enum.reduce(lotes_validos, 0.0, fn lote, acumulador_prendas ->
+        prendas_defectuosas = lote.prendas * (lote.defectos / 100.0)
+        prendas_validas = lote.prendas - prendas_defectuosas
+        acumulador_prendas + prendas_validas
+      end)
+
+    # Imprimir el resumen financiero y el costo promedio por prenda válida
+    IO.puts("\nResumen financiero semanal:")
+
+    total_pagado_formateado = Util.formatear_dinero(total_pagado_taller)
+
+    IO.puts("Durante la presente semana, el taller debe pagar un valor total de")
+    IO.puts("$#{total_pagado_formateado} por concepto de liquidaciones de confección.\n")
+
+    if total_prendas_validas > 0 do
+      costo_promedio_por_prenda = total_pagado_taller / total_prendas_validas
+      costo_promedio_formateado = Util.formatear_dinero(costo_promedio_por_prenda)
+
+      IO.puts("El costo promedio pagado por cada prenda válida fabricada es de")
+      IO.puts("$#{costo_promedio_formateado} (calculado sobre un total de #{Util.formatear_dinero(total_prendas_validas)} prendas válidas).")
+    else
+      IO.puts("No se registraron prendas válidas durante la semana, por lo cual")
+      IO.puts("el costo promedio por prenda no puede calcularse.")
     end
+
   end
 
-  @doc """
-  R7
-  """
-  def costo_total(liquidaciones) do
-    total = Enum.reduce(liquidaciones, 0, fn liquidacion, acc -> acc + liquidacion.neto end)
-    prendas = Enum.reduce(liquidaciones, 0, fn liquidacion, acc -> acc + liquidacion.prendas end)
 
-    promedio = if prendas == 0, do: {:error, :sin_prendas}, else: {:ok, total / prendas}
+  # Reporte 8. Confeccionistas en todas las líneas
+  @doc "en la precente funcion se filtran los lotes validos, luego se busca a los confeccionistas
+   que hayan trabajado en todas las lineas de produccion, y finalmente se imprime el resultado en la consola."
 
-    %{total: total, prendas: prendas, promedio: promedio}
-  end
+ def en_todas_las_lineas(lotes, confeccionistas, lineas) do
+    #  Filtrar los lotes válidos utilizando Validaciones.validar_lote/3
+    lotes_validos =
+      Enum.filter(lotes, fn lote ->
+        case Validaciones.validar_lote(lote, confeccionistas, lineas) do
+          {:ok, _} -> true
+          {:error, _} -> false
+        end
+      end)
 
-  # R8. Confeccionistas en todas las líneas
-  @doc "Nombres de quienes tienen al menos un lote válido en cada línea de producción."
-  # for recorre los confeccionistas y deja solo a quienes cumplen el filtro
-  # enum.all?/2 verifica que se cumpla para todas las líneas
-  # enum.any?/2 verifica que exista al menos un lote válido de ese confeccionista en esa línea
-  def en_todas_las_lineas(lotes_validos, confeccionistas, lineas) do
-    for c <- confeccionistas,
+    # Identificar los confeccionistas que hayan trabajado en todas las líneas de producción
+    cumplen_criterio =
+      Enum.filter(confeccionistas, fn confeccionista ->
         Enum.all?(lineas, fn linea ->
           Enum.any?(lotes_validos, fn lote ->
-            lote.confeccionista == c.codigo and lote.linea == linea.id
+            lote.confeccionista == confeccionista.codigo and lote.linea == linea.id
           end)
-        end),
-        do: c.nombre
+        end)
+      end)
+
+    # Imprimir el resultado en la consola
+    IO.puts("\nConfeccionistas que trabajaron en todas las líneas de producción esta semana ")
+
+    case cumplen_criterio do
+      [] ->
+        IO.puts("Ningún confeccionista elaboró lotes válidos en la totalidad de las líneas de producción esta semana.")
+
+      lista ->
+        IO.puts("Los siguientes confeccionistas elaboraron al menos un lote válido en todas las líneas de producción:\n")
+        Enum.each(lista, fn c ->
+          IO.puts(" • #{c.nombre} (Código: #{c.codigo})")
+        end)
+    end
+
+    # Devolver la lista de nombres de los confeccionistas que cumplen el criterio
+    Enum.map(cumplen_criterio, & &1.nombre)
   end
 
   @doc """
   Funcion para llamar todos los reportes
   """
   def todos_los_reportes(lotes, confeccionistas, lineas) do
+    IO.puts("\nReporte 1: Lotes rechazados por motivo y su cantidad")
     r1(lotes, confeccionistas, lineas)
     IO.puts("\n")
+
+    IO.puts("Reporte 2: Productividad por línea")
     IO.inspect(productividad_lineas(lotes, lineas), label: "Productividad por línea", limit: :infinity)
     IO.puts("\n")
+
+    IO.puts("Reporte 3: Producción diaria")
     produccion_diaria = produccion_diaria(lotes)
     IO.inspect(produccion_diaria, label: "Producción diaria", limit: :infinity)
     IO.inspect(resumen_meta(produccion_diaria), label: "Resumen de meta diaria cumplida", limit: :infinity)
     IO.puts("\n")
-    liquidaciones = Enum.map(confeccionistas, &Liquidacion.liquidar_confeccionista(&1, lotes))
-    IO.inspect(ranking(liquidaciones, campo: :neto, orden: :desc, limite: 3), label: "Ranking de liquidaciones por neto", limit: :infinity)
+
+    IO.puts("Reporte 4: Liquidación de confeccionistas")
+    liquidaciones = ordenar_liquidaciones(lotes, confeccionistas, lineas)
     IO.puts("\n")
-    lideres_por_dia = lideres_por_dia(lotes, confeccionistas)
-    IO.inspect(lideres_por_dia, label: "Líderes por día", limit: :infinity)
-    IO.inspect(mas_dias_en_primer_lugar(lideres_por_dia), label: "Confeccionista con más días en primer lugar", limit: :infinity)
+
+    IO.puts("Reporte 5: Líderes por día")
+    mejor_desempeno = lideres_por_dia(lotes, confeccionistas)
+    IO.inspect(mejor_desempeno, label: "Líderes por día", limit: :infinity)
     IO.puts("\n")
-    IO.inspect(mejor_calidad(lotes, confeccionistas), label: "Confeccionista con mejor calidad", limit: :infinity)
+
+    IO.puts("Reporte 6: Confeccionista con mejor calidad")
+    mejor_calidad(lotes, confeccionistas, lineas)
     IO.puts("\n")
-    IO.inspect(costo_total(liquidaciones), label: "Costo total y promedio por prenda", limit: :infinity)
+
+    IO.puts("Reporte 7: Resumen financiero semanal")
+    resumen_financiero_semanal(lotes, confeccionistas, lineas)
     IO.puts("\n")
-    IO.inspect(en_todas_las_lineas(lotes, confeccionistas, lineas), label: "Confeccionistas que trabajaron en todas las líneas", limit: :infinity)
+
+    IO.puts("Reporte 8: Confeccionistas que trabajaron en todas las líneas de producción")
+    en_todas_las_lineas(lotes, confeccionistas, lineas)
+
   end
+
 end
