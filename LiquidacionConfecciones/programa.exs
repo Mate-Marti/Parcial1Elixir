@@ -1,3 +1,10 @@
+@moduledoc """
+  Módulo que contiene el programa principal para la liquidación de confeccionistas.
+  verción 1.0
+  autores:Jofrer Ivan Lopez Lizcano, Sara Sofia Salazar, Mateo Martines Rincon
+  fecha: 2026-10-04
+  """
+
 defmodule Programa do
 
   def main do

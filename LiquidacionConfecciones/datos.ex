@@ -1,3 +1,10 @@
+@moduledoc """
+  Módulo que contiene los datos de los confeccionistas, líneas y lotes.
+  verción 1.0
+  autores:Jofrer Ivan Lopez Lizcano, Sara Sofia Salazar, Mateo Martines Rincon
+  fecha: 2026-10-04
+  """
+
 defmodule Datos do
  def confeccionistas do
 #lista de mapas que representan a los confeccionistas, cada mapa contiene un código, un nombre y un booleano

@@ -1,3 +1,10 @@
+@moduledoc """
+  Módulo que contiene las funciones para generar reportes de los lotes, confeccionistas y líneas.
+  verción 1.0
+  autores:Jofrer Ivan Lopez Lizcano, Sara Sofia Salazar, Mateo Martines Rincon
+  fecha: 2026-10-04
+  """
+
 defmodule Reportes do
   @meta_diaria 600
   @dias 1..6
@@ -10,20 +17,20 @@ defmodule Reportes do
     :porcentaje_invalido
   ]
 
-  # R1. Rechazos
+
   @doc """
-  contar_rechazos/1 recibe una lista de lotes rechazados y devuelve un mapa con la cantidad de rechazos por motivo.
-  Devuelve `[{motivo, cantidad}]` con los cinco motivos en el orden de las
-  reglas, incluso los que tienen cero rechazos.
-  enum.frequencies/1 cuenta la frecuencia de cada motivo en la lista de rechazados,
-  devolviendo un mapa con los motivos como claves y las cantidades como valores
+   Recibe una lista de lotes, una lista de confeccionistas y una lista de líneas, y genera un
+   reporte de los lotes rechazados, agrupándolos por motivo de rechazo
   """
   def contar_rechazos(rechazados) do
     frecuencias = rechazados |> Enum.map(fn {_lote, motivo} -> motivo end) |> Enum.frequencies()
     Enum.map(@motivos, fn motivo -> {motivo, Map.get(frecuencias, motivo, 0)} end)
   end
 
-  # Devuelve los lotes rechazados junto con el texto del motivo
+  @doc """
+  Recibe una lista de lotes, una lista de confeccionistas y una lista de líneas,
+   y devuelve una lista de los lotes rechazados junto con el texto del motivo
+  """
   def lotes_rechazados(lotes, confeccionistas, lineas) do
     motivos = %{
       :confeccionista_desconocido => "Confeccionista desconocido",
@@ -79,14 +86,9 @@ defmodule Reportes do
     IO.inspect(rechazos, label: "Lotes rechazados por motivo y su cantidad", limit: :infinity)
   end
 
-  # Reporte 4
-  # recibe lotes válidos y líneas, devuelve una lista de mapas con id, nombre, prendas, productividad de cada línea, ordenadas de mayor a menor productividad. Las líneas sin lotes válidos aparecen con cero.
-  # enum.map/2 itera sobre cada línea en la lista de líneas, y para cada línea l,
-  # obtiene la cantidad de prendas producidas en esa línea a partir de los lotes válidos,
-  # y calcula la productividad dividiendo las prendas por los puestos de la línea
-  # sort_by/3 ordena la lista de resultados por el campo :productividad en orden descendente, de mayor a menor productividad
   @doc """
-  R2. Productividad por línea
+  reporte 2 esta función recibe una lista de lotes válidos y una lista de líneas,
+  y calcula la productividad de cada línea.
   """
   def productividad_lineas(lotes_validos, lineas) do
     prendas_por_linea = sumar_prendas_por(lotes_validos, & &1.linea)
@@ -99,14 +101,11 @@ defmodule Reportes do
     |> Enum.sort_by(& &1.productividad, :desc)
   end
 
-  # Reporte 3
-  @doc "Prendas producidas en cada uno de los 6 días (cero si no hubo lotes)."
-  # recibe lotes válidos y devuelve un mapa con la producción diaria (días 1 a 6)
-  # sumar_prendas_por/2 acumula las prendas de los lotes válidos por día
-  # enum.map/2 recorre el rango de días y arma una tupla {dia, prendas} por cada uno, con Map.get/3
-  # obteniendo la cantidad de prendas del día desde el mapa de prendas por día,
-  # usando 0 como valor por defecto si ese día no tuvo lotes
-  # enum.into/2 convierte esa lista de tuplas en un mapa
+@doc """
+  reporte 3 esta función recibe una lista de lotes válidos y calcula la producción diaria
+  de prendas, agrupando por día y sumando la cantidad de prendas producidas en cada día.
+  """
+
   def produccion_diaria(lotes_validos) do
     prendas_por_dia = sumar_prendas_por(lotes_validos, & &1.dia)
 
@@ -172,7 +171,9 @@ defmodule Reportes do
 
 
   @doc """
-  Reporte 5. Líderes por día
+  Reporte 5. Líderes por día esta función recibe la lista de lotes válidos y la lista de confeccionistas,
+  y devuelve una lista de mapas con el día, la cantidad de prendas producidas por el líder del día y
+  los nombres de los confeccionistas que alcanzaron esa cantidad.
   """
   def lideres_por_dia(lotes_validos, confeccionistas) do
     nombres =
@@ -190,9 +191,6 @@ defmodule Reportes do
     end)
   end
 
-  # Ordena de mayor a menor con Enum.sort/2, igual que en ranking.
-  # El case separa el día sin lotes ([]) del caso normal, donde la cabeza de la lista es el líder.
-  # for con filtro agrega a los empatados.
   defp lideres_del_dia(dia, prendas_por_confeccionista, nombres) do
     ordenados =
       Enum.sort(prendas_por_confeccionista, fn {_c1, p1}, {_c2, p2} -> p1 >= p2 end)
@@ -232,11 +230,10 @@ defmodule Reportes do
     end
   end
 
-  # Reporte 6. Mejor calidad
-
   @doc """
-  Porcentaje de defectos ponderado por prendas: suma(defectos × prendas) / suma(prendas).
-  enum.reduce/3 acumula la suma de las prendas y la suma de defectos × prendas de cada lote
+  Reporte 6. Mejor calidad esta función recibe la lista de lotes, la lista de confeccionistas y la lista de líneas,
+  y devuelve un mapa con el nombre del confeccionista con mejor calidad, la cantidad de lotes válidos que tuvo,
+  el total de prendas confeccionadas y el porcentaje ponderado de defectos.
   """
   def mejor_calidad(lotes, confeccionistas, lineas) do
 
@@ -320,7 +317,8 @@ end
 
 
   @doc """
-  Reporte 7. Costo total
+  Reporte 7. Costo total por prenda esta función recibe la lista de lotes, la lista de confeccionistas y la lista de líneas,
+  y calcula el costo total por prenda válida, considerando el total pagado a los confeccionistas y el total de prendas válidas producidas.
   """
   def resumen_financiero_semanal(lotes, confeccionistas, lineas) do
     # 1. Filtrar los lotes válidos utilizando Validaciones.validar_lote/3
@@ -370,10 +368,11 @@ end
 
   end
 
-
-  # Reporte 8. Confeccionistas en todas las líneas
-  @doc "en la precente funcion se filtran los lotes validos, luego se busca a los confeccionistas
-   que hayan trabajado en todas las lineas de produccion, y finalmente se imprime el resultado en la consola."
+@doc """
+  Reporte 8. Confeccionistas que trabajaron en todas las líneas de producción esta función recibe
+  la lista de lotes, la lista de confeccionistas y la lista de líneas, y devuelve una lista con los
+  nombres de los confeccionistas que elaboraron al menos un lote válido en todas las líneas de producción.
+"""
 
  def en_todas_las_lineas(lotes, confeccionistas, lineas) do
     #  Filtrar los lotes válidos utilizando Validaciones.validar_lote/3

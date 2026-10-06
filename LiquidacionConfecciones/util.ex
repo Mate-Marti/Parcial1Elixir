@@ -1,8 +1,12 @@
-defmodule Util do
-  @moduledoc """
-  Funciones de apoyo puras: conversión del lote adicional escrito por el
+@moduledoc """
+  Módulo que contiene funciones de apoyo puras: conversión del lote adicional escrito por el
   usuario y formato de números para los reportes.
+  verción 1.0
+  autores:Jofrer Ivan Lopez Lizcano, Sara Sofia Salazar, Mateo Martines Rincon
+  fecha: 2026-10-04
   """
+
+defmodule Util do
   @separador ";"
   @cantidad_campos 5
 
@@ -61,7 +65,7 @@ defmodule Util do
       iex> Util.formatear_dinero(598560)
       "598560.00"
   """
-  
+
   def formatear_dinero(numero) when is_number(numero) do
     :erlang.float_to_binary(numero * 1.0, decimals: 2)
   end

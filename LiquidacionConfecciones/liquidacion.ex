@@ -1,9 +1,23 @@
+@moduledoc """
+  Módulo que contiene las funciones para calcular la liquidación de los confeccionistas.
+  verción 1.0
+  autores:Jofrer Ivan Lopez Lizcano, Sara Sofia Salazar, Mateo Martines Rincon
+  fecha: 2026-10-04
+  """
+
 defmodule Liquidacion do
   @precio_base 3200
   @meta_bonificacion 120
   @bonificacion 18_000
   @alquiler 15_000
 
+
+@doc """
+  Recibe un lote y calcula su valor según la cantidad de defectos que tenga,
+  si tiene menos de 2% de defectos se le suma un 7% al valor base, si tiene entre 2
+   y 5% de defectos se le deja el valor base, si tiene entre 5 y 10% de defectos se le
+   descuenta un 12% del valor base y si tiene más de 10% de defectos se le descuenta un 25% del valor base
+"""
 
   def valor_lote(lote) do
 
@@ -23,7 +37,8 @@ defmodule Liquidacion do
   end
 
   @doc """
-  Recibe la lista de lotes validos de un confeccionista y agrupa los lotes por día, despues suma las prendas de cada día y si se alcanzo el minimo para la bonificacion suma los 18k de
+  Recibe la lista de lotes validos de un confeccionista y agrupa los lotes por día,
+  despues suma las prendas de cada día y si se alcanzo el minimo para la bonificacion suma los 18k de
   """
   def calcular_bonificaciones(lotes_del_confeccionista) do
     lotes_del_confeccionista
@@ -41,7 +56,8 @@ defmodule Liquidacion do
   end
 
   @doc """
-  Verifica si el confeccionista tiene alquilada una maquina y si es asi cuenta los días en que tiene un lote válido y multiplica esa cantidad de días por @alquiler
+  Verifica si el confeccionista tiene alquilada una maquina y si es asi cuenta los días
+   en que tiene un lote válido y multiplica esa cantidad de días por @alquiler
   """
   def calcular_alquiler(lotes_del_confeccionista, confeccionista) do
     if confeccionista.alquiler do
@@ -58,7 +74,8 @@ defmodule Liquidacion do
   end
 
   @doc """
-  recibe un mapa de confeccionista y la lista de todos los lotes marcados con valido de el , despues de hechas las operaciones retorna un mapa para mostrarse en pantalla
+  recibe un mapa de confeccionista y la lista de todos los lotes marcados con valido de el ,
+  despues de hechas las operaciones retorna un mapa para mostrarse en pantalla
   en caso de no tener lotes retorna 0 en todos los campos del mapa
   """
   def liquidar_confeccionista(confeccionista, lotes_validos_totales) do
