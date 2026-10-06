@@ -1,3 +1,4 @@
+defmodule Reportes do
 @moduledoc """
   Módulo que contiene las funciones para generar reportes de los lotes, confeccionistas y líneas.
   verción 1.0
@@ -5,7 +6,6 @@
   fecha: 2026-10-04
   """
 
-defmodule Reportes do
   @meta_diaria 600
   @dias 1..6
   @minimo_lotes_calidad 3
@@ -411,6 +411,61 @@ end
     # Devolver la lista de nombres de los confeccionistas que cumplen el criterio
     Enum.map(cumplen_criterio, & &1.nombre)
   end
+
+
+  @doc """
+  Recibe una lista de liquidaciones ya calculadas y una lista de opciones.
+  Filtra, ordena y limita según las Keyword Lists ingresadas.
+  """
+  def ranking(liquidaciones, opciones \\ []) do
+    campo = Keyword.get(opciones, :campo, :neto)
+    orden = Keyword.get(opciones, :orden, :desc)
+    limite = Keyword.get(opciones, :limite, nil)
+
+    IO.puts("\n--- Ranking (Campo: #{campo}, Orden: #{orden}, Límite: #{limite || "Todos"}) ---")
+
+    liquidaciones_ordenadas =
+      Enum.sort_by(liquidaciones, fn liq -> Map.get(liq, campo) end, orden)
+
+    liquidaciones_finales =
+      if limite do
+        Enum.take(liquidaciones_ordenadas, limite)
+      else
+        liquidaciones_ordenadas
+      end
+
+    liquidaciones_finales
+    |> Enum.with_index(1)
+    |> Enum.each(fn {liq, idx} ->
+      nombre = String.pad_trailing(liq.confeccionista.nombre, 18)
+      valor_campo = Map.get(liq, campo)
+
+      impresion = if campo in [:neto, :bruto], do: "$#{Util.formatear_dinero(valor_campo)}", else: valor_campo
+
+      IO.puts("Puesto #{idx}: #{nombre} -> #{campo}: #{impresion}")
+    end)
+  end
+
+  @doc """
+  Ejecuta el Map.merge/3 con una funcion anonima con los valores cuando llave, en este caso el dia, coincide.
+   Se suman los valores de produccion_local y taller_aliado el cual fue subministrado en el ejericio.
+  """
+  def combinar_talleres(produccion_local) do
+    taller_aliado = %{1 => 550, 2 => 620, 3 => 480, 5 => 710, 7 => 200}
+
+    produccion_combinada = Map.merge(produccion_local, taller_aliado, fn _dia, valor_local, valor_aliado ->
+      valor_local + valor_aliado
+    end)
+
+    IO.puts("\n--- Producción Combinada (Local + Aliado) ---")
+    Enum.each(produccion_combinada, fn {dia, prendas} ->
+      IO.puts("Día #{dia}: #{prendas} prendas")
+    end)
+
+    produccion_combinada
+  end
+
+
 
   @doc """
   Funcion para llamar todos los reportes

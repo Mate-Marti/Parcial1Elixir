@@ -1,3 +1,4 @@
+defmodule Programa do
 @moduledoc """
   Módulo que contiene el programa principal para la liquidación de confeccionistas.
   verción 1.0
@@ -5,7 +6,6 @@
   fecha: 2026-10-04
   """
 
-defmodule Programa do
 
   def main do
     confeccionistas = Datos.confeccionistas()
@@ -25,7 +25,8 @@ defmodule Programa do
     IO.puts("6. Valor de lotes")
     IO.puts("7. Liquidación del confeccionista")
     IO.puts("8. Reportes")
-    IO.puts("9. salir")
+    IO.puts("9. rank y merge")
+    IO.puts("10. salir")
 
     opcion = IO.gets("Seleccione una opción: ")
     |> String.trim()
@@ -145,7 +146,35 @@ defmodule Programa do
         Reportes.todos_los_reportes(lotes, confeccionistas, lineas)
         menu(confeccionistas, lineas, lotes)
 
+
       "9" ->
+      # Preparamos las liquidaciones para el C.1
+      lotes_validos = Enum.filter(lotes, fn l -> match?({:ok, _}, Validaciones.validar_lote(l, confeccionistas, lineas)) end)
+
+      liquidaciones =
+          Enum.map(confeccionistas, fn conf ->
+            liq = Liquidacion.liquidar_confeccionista(conf, lotes_validos)
+            prendas_totales = Enum.reduce(liq.lotes_detalle, 0, fn lote, acc -> acc + lote.prendas end)
+
+            liq
+            |> Map.put(:prendas, prendas_totales)
+            |> Map.put(:bruto, liq.suma_lotes) # El bruto es la suma antes de bonos/alquiler
+          end)
+
+      # C.1: Las 3 llamadas obligatorias del PDF
+      Reportes.ranking(liquidaciones, [])
+      Reportes.ranking(liquidaciones, campo: :prendas, limite: 3)
+      Reportes.ranking(liquidaciones, orden: :asc, campo: :bruto)
+
+      # C.2: Llamada a combinar talleres
+      produccion = Reportes.produccion_diaria(lotes_validos)
+      Reportes.combinar_talleres(produccion)
+
+      menu(confeccionistas, lineas, lotes)
+
+
+
+      "10" ->
         IO.puts("Saliendo del programa...")
       _ ->
         IO.puts("Opción inválida. Intente nuevamente.")

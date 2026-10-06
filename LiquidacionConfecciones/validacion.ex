@@ -1,3 +1,4 @@
+defmodule Validaciones do
 @moduledoc """
   Módulo que contiene las funciones de validación de los lotes.
   verción 1.0
@@ -5,7 +6,9 @@
   fecha: 2026-10-04
   """
 
-defmodule Validaciones do
+
+
+
   #Enum.any?()sirve para verificar si algún elemento de la lista cumple con la condición especificada en la función anónima y
   # Devuelve true si al menos un elemento cumple con la condición
   # y false en caso contrario,utilizamos patter maching para acceder a los valores de los mapas y compararlos con el valor proporcionado

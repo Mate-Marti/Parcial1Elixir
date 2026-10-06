@@ -1,3 +1,4 @@
+defmodule Util do
 @moduledoc """
   Módulo que contiene funciones de apoyo puras: conversión del lote adicional escrito por el
   usuario y formato de números para los reportes.
@@ -6,7 +7,7 @@
   fecha: 2026-10-04
   """
 
-defmodule Util do
+
   @separador ";"
   @cantidad_campos 5
 

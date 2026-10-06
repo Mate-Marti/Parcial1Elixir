@@ -1,3 +1,4 @@
+defmodule Liquidacion do
 @moduledoc """
   Módulo que contiene las funciones para calcular la liquidación de los confeccionistas.
   verción 1.0
@@ -5,7 +6,6 @@
   fecha: 2026-10-04
   """
 
-defmodule Liquidacion do
   @precio_base 3200
   @meta_bonificacion 120
   @bonificacion 18_000
